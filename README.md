@@ -1,14 +1,21 @@
 # Overview
 
-This project contains the general-purpose data-binding functionality
-and tree-model for [Jackson Data Processor](../../../jackson).
-It builds on [Streaming API](../../../jackson-core) (stream parser/generator) package,
-and uses [Jackson Annotations](../../../jackson-annotations) for configuration.
-Project is licensed under [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
-While the original use case for Jackson was JSON data-binding, it can now be used to read content
-encoded in other data formats as well, as long as parser and generator implementations exist.
-Naming of classes uses word 'JSON' in many places even though there is no actual hard dependency to JSON format.
+* == general-purpose data-binding functionality + tree-model for [Jackson Data Processor](../../../jackson)
+  * built | [Streaming API](../../../jackson-core) (stream parser/generator) package
+  * configured -- based on -- [Jackson Annotations](../../../jackson-annotations)
+  * 👁️NOT JSON specific 👁️
+    * ALTHOUGH some naming does contain 'JSON'
+      * REASON: 🧠historical reasons 🧠
+  * -- depends on --
+    * `jackson-core`
+    * `jackson-annotations`
+* Jackson
+  * use cases
+    * originally, JSON data-binding
+    * read content / encoded in OTHER data formats 
+      * Reason: 🧠-- thanks to -- `jackson-databinding` 🧠
+      * requirements
+        * parser & generator implementations exist | those data formats
 
 ## Status
 
@@ -25,48 +32,52 @@ Naming of classes uses word 'JSON' in many places even though there is no actual
 
 ## Maven
 
-Functionality of this package is contained in Java package `com.fasterxml.jackson.databind`, and can be used using following Maven dependency:
+* add it | "pom.xml"
 
-```xml
-<properties>
-  ...
-  <!-- Use the latest version whenever possible. -->
-  <jackson.version>2.17.1</jackson.version>
-  ...
-</properties>
+    ```xml
+    <properties>
+      ...
+      <!-- Use the latest version whenever possible. -->
+      <jackson.version>2.17.1</jackson.version>
+      ...
+    </properties>
+    
+    <dependencies>
+      ...
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      ...
+    </dependencies>
+    ```
 
-<dependencies>
-  ...
-  <dependency>
-    <groupId>com.fasterxml.jackson.core</groupId>
-    <artifactId>jackson-databind</artifactId>
-    <version>${jackson.version}</version>
-  </dependency>
-  ...
-</dependencies>
-```
+  * dependant `jackson-core` & `jackson-annotations` are automatically included
+    * if you want to ensure compatible versions -> use [jackson-bom](../../../jackson-bom)
 
-Package also depends on `jackson-core` and `jackson-annotations` packages, but when using build tools
-like Maven or Gradle, dependencies are automatically included.
-You may, however, want to use [jackson-bom](../../../jackson-bom) to ensure compatible versions
-of dependencies.
-If not using build tool that can handle dependencies using project's `pom.xml`, you will need to download
-and include these 2 jars explicitly.
+* jars
+  * you can download
+    * | Maven repository or
+    * links on [Wiki](../../wiki)
+  * == functional OSGi bundle / import/export declarations
+    * -> can be used | OSGi container
+  * from Jackson v2.10+
+    * `module-info.class` definitions are included -> jar == proper Java module (JPMS)
 
 ## Non-Maven dependency resolution
 
-For use cases that do not automatically resolve dependencies from Maven repositories, you can still
-download jars from [Central Maven repository](https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/).
-
-Databind jar is also a functional OSGi bundle, with proper import/export declarations, so it can be use on OSGi container as is.
-
-Jackson 2.10 and above include `module-info.class` definitions so the jar is also a proper Java Module (JPMS).
-
-Jackson 2.12 and above include additional Gradle 6 Module Metadata for version alignment with Gradle.
+* download
+  * `jackson-databind`
+  * dependant 
+    * `jackson-core` jar
+    * `jackson-annotations` jar
 
 -----
+
 ## Compatibility
 
+* TODO:
 ### JDK
 
 Jackson-databind package baseline JDK requirements are as follows:
