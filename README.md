@@ -103,95 +103,99 @@ for information on Android SDK versions to Android Release names see [https://en
 
 # Use It!
 
-More comprehensive documentation can be found from [Jackson-docs](../../../jackson-docs) repository; as well as from [Wiki](../../wiki) of this project.
-But here are brief introductionary tutorials, in recommended order of reading.
+* [Wiki](../../wiki)
 
-## 1 minute tutorial: POJOs to JSON and back
+## 1 minute tutorial: POJOs <-> JSON
 
-The most common usage is to take piece of JSON, and construct a Plain Old Java Object ("POJO") out of it. So let's start there. With simple 2-property POJO like this:
 
 ```java
-// Note: can use getters/setters as well; here we just use public fields directly:
-public class MyValue {
-  public String name;
-  public int age;
-  // NOTE: if using getters/setters, can keep fields `protected` or `private`
-}
+    import com.fasterxml.jackson.databind.ObjectMapper;
+
+    // Note: can use getters/setters as well; here we just use public fields directly:
+    public class MyValue {
+      public String name;
+      public int age;
+      // NOTE: if using getters/setters, can keep fields `protected` or `private`
+    }
+  
+    ObjectMapper mapper = new ObjectMapper(); // create once, reuse. Default one, it's valid so far  
+  
+    // 1. JSON -> POJO
+    // 1.1
+    MyValue value = mapper.readValue(new File("data.json"), MyValue.class);
+    // 1.2
+    value = mapper.readValue(new URL("http://some.com/api/entry.json"), MyValue.class);
+    // 1.3
+    value = mapper.readValue("{\"name\":\"Bob\", \"age\":13}", MyValue.class);
+    
+    // 2. POJO -> JSON
+    // 2.1
+    mapper.writeValue(new File("result.json"), myResultObject);
+    // 2.2
+    byte[] jsonBytes = mapper.writeValueAsBytes(myResultObject);
+    // 2.3
+    String jsonString = mapper.writeValueAsString(myResultObject);    
 ```
-
-we will need a `com.fasterxml.jackson.databind.ObjectMapper` instance, used for all data-binding, so let's construct one:
-
-```java
-ObjectMapper mapper = new ObjectMapper(); // create once, reuse
-```
-
-The default instance is fine for our use -- we will learn later on how to configure mapper instance if necessary. Usage is simple:
-
-```java
-MyValue value = mapper.readValue(new File("data.json"), MyValue.class);
-// or:
-value = mapper.readValue(new URL("http://some.com/api/entry.json"), MyValue.class);
-// or:
-value = mapper.readValue("{\"name\":\"Bob\", \"age\":13}", MyValue.class);
-```
-
-And if we want to write JSON, we do the reverse:
-
-```java
-mapper.writeValue(new File("result.json"), myResultObject);
-// or:
-byte[] jsonBytes = mapper.writeValueAsBytes(myResultObject);
-// or:
-String jsonString = mapper.writeValueAsString(myResultObject);
-```
-
-So far so good?
 
 ## 3 minute tutorial: Generic collections, Tree Model
 
-Beyond dealing with simple Bean-style POJOs, you can also handle JDK `List`s, `Map`s:
+### Generic collections
+
+* JSON <-> JDK `List`s, `Map`s
 
 ```java
+// 1. JSON -> JDK
+// 1.1 Map
 Map<String, Integer> scoreByName = mapper.readValue(jsonSource, Map.class);
-List<String> names = mapper.readValue(jsonSource, List.class);
+// 1.2 List
+List<String> names = mapper.readValue(jsonSource, List.class); 
 
-// and can obviously write out as well
+// 2. JDK -> JSON 
 mapper.writeValue(new File("names.json"), names);
 ```
 
-as long as JSON structure matches, and types are simple.
-If you have POJO values, you need to indicate actual type (note: this is NOT needed for POJO properties with `List` etc types):
+* 👁️if your collection has POJO values (_Example:_ `Map`) -> you need to indicate actual type 👁️
+  * NOT applicable | `List`
+    * Reason: 🧠 you use POJO properties | `List`, != POJO values 🧠
 
 ```java
+// 1. JSON -> Map
 Map<String, ResultValue> results = mapper.readValue(jsonSource,
-   new TypeReference<Map<String, ResultValue>>() { } );
+   new TypeReference<Map<String, ResultValue>>() { } );     // specify the actual type
 // why extra work? Java Type Erasure will prevent type detection otherwise
 ```
 
-(note: no extra effort needed for serialization, regardless of generic types)
-
-But wait! There is more!
-
-(enters Tree Model...)
-
 ### Tree Model
 
-While dealing with `Map`s, `List`s and other "simple" Object types (Strings, Numbers, Booleans) can be simple, Object traversal can be cumbersome.
-This is where Jackson's [Tree model](https://github.com/FasterXML/jackson-databind/wiki/JacksonTreeModel) can come in handy:
+* Jackson's [Tree model](https://github.com/FasterXML/jackson-databind/wiki/JacksonTreeModel)
+* use cases
+  * object traversal
+  * structure highly dynamic / -- NOT map nicely to -- Java classes
+* JSON <-> Jackson Tree Model
+  * Jackson Tree Model entities
+    * `JsonNode`
+      * generic one
+    * `ObjectNode`
+      * uses
+        * known in advanced / it's an `Object`
+    * `ArrayNode`
+      * uses
+        * known in advanced / it's an `Array`
 
 ```java
-// can be read as generic JsonNode, if it can be Object or Array; or,
-// if known to be Object, as ObjectNode, if array, ArrayNode etc:
-JsonNode root = mapper.readTree("{ \"name\": \"Joe\", \"age\": 13 }");
+// 1. JSON -> Jackson Tree Model
+JsonNode root = mapper.readTree("{ \"name\": \"Joe\", \"age\": 13 }");  // JsonNode
 String name = root.get("name").asText();
 int age = root.get("age").asInt();
 
-// can modify as well: this adds child Object as property 'other', set property 'type'
+// Jackson Tree Model can be modified
 root.withObject("/other").put("type", "student");
-String json = mapper.writeValueAsString(root); // prints below
 
+// 2. Jackson Tree Model -> JSON 
+String json = mapper.writeValueAsString(root); // prints below
+System.out.println(json);
 /*
-with above, we end up with something like as 'json' String:
+output of the 'json' String
 {
   "name" : "Bob",
   "age" : 13,
@@ -202,43 +206,54 @@ with above, we end up with something like as 'json' String:
 */
 ```
 
-Tree Model can be more convenient than data-binding, especially in cases where structure is highly dynamic, or does not map nicely to Java classes.
+### Tree Model + Structured data binding
 
-Finally, feel free to mix and match, and even in the same json document (useful when only part of the document is known and modeled in your code)
+* Structured Data == ALL POJO
+* use cases
+  * part of the document is known
 
 ```java
-// Some parts of this json are modeled in our code, some are not
-JsonNode root = mapper.readTree(complexJson);
-Person p = mapper.treeToValue(root.get("person"), Person.class); // known single pojo
-Map<String, Object> dynamicmetadata = mapper.treeToValue(root.get("dynamicmetadata"), Map.class); // unknown smallish subfield, convert all to collections
-int singledeep = root.get("deep").get("large").get("hiearchy").get("important").intValue(); // single value in very deep optional subfield, ignoring the rest
-int singledeeppath = root.at("/deep/large/hiearchy/important").intValue(); // json path
-int singledeeppathunique = root.findValue("important").intValue(); // by unique field name
+// 1. JSON -> Jackson Tree Model
+JsonNode root = mapper.readTree(complexJson);           
+Person p = mapper.treeToValue(root.get("person"), Person.class); // Jackson Tree Model / contains POJO
+Map<String, Object> dynamicmetadata = mapper.treeToValue(root.get("dynamicmetadata"), Map.class); // Jackson Tree Model / contains Map
 
-// Send an aggregate json from heterogenous sources
+// Jackson v2.16+
+List<Person> friends = mapper.treeToValue(root.get("friends"), new TypeReference<List<Person>>() { }); // Jackson Tree Model / contains List 
+                                                                                                     
+
+// 1.1 ways to find a child node | Jackson Tree model
+// 1.1.1 consecutive .get()
+int singledeep = root.get("deep").get("large").get("hiearchy").get("important").intValue();
+// 1.1.2 .at("pathToFindIt")
+int singledeeppath = root.at("/deep/large/hiearchy/important").intValue(); 
+// 1.1.3 .findValue("childNodeName")
+int singledeeppathunique = root.findValue("important").intValue(); 
+
+
+// 2. POJO or individually -> Jackson Tree Model 
 ObjectNode root = mapper.createObjectNode();
-root.putPOJO("person", new Person("Joe")); // simple pojo
-root.putPOJO("friends", List.of(new Person("Jane"), new Person("Jack"))); // generics
+// 2.1 POJO
+root.putPOJO("person", new Person("Joe")); 
+// 2.2 Generics
+root.putPOJO("friends", List.of(new Person("Jane"), new Person("Jack"))); 
+// 2.3 Collection
 Map<String, Object> dynamicmetadata = Map.of("Some", "Metadata");
-root.putPOJO("dynamicmetadata", dynamicmetadata);  // collections
-root.putPOJO("dynamicmetadata", mapper.valueToTree(dynamicmetadata)); // same thing
-root.set("dynamicmetadata", mapper.valueToTree(dynamicmetadata)); // same thing
-root.withObject("deep").withObject("large").withObject("hiearchy").put("important", 42); // create as you go
-root.withObject("/deep/large/hiearchy").put("important", 42); // json path
+root.putPOJO("dynamicmetadata", dynamicmetadata); 
+root.putPOJO("dynamicmetadata", mapper.valueToTree(dynamicmetadata));
+root.set("dynamicmetadata", mapper.valueToTree(dynamicmetadata));
+// 2.3 as you go
+root.withObject("deep").withObject("large").withObject("hiearchy").put("important", 42);
+// 2.4. as you go BUT WITHOUT trying json path -- Jackson v2.16+ --
+root.withObjectProperty("deep").withObjectProperty("large").withObjectProperty("hiearchy").put("important", 42); 
+// 2.5 -- based on -- json path
+root.withObject("/deep/large/hiearchy").put("important", 42);  
 mapper.writeValueAsString(root);
-```
-
-**Supported for Jackson 2.16+ versions**
-
-```java
-// generics
-List<Person> friends = mapper.treeToValue(root.get("friends"), new TypeReference<List<Person>>() { });
-// create as you go but without trying json path
-root.withObjectProperty("deep").withObjectProperty("large").withObjectProperty("hiearchy").put("important", 42);
 ```
 
 ## 5 minute tutorial: Streaming parser, generator
 
+* TODO:
 As convenient as data-binding (to/from POJOs) can be; and as flexible as Tree model can be, there is one more canonical processing model available: incremental (aka "streaming") model.
 It is the underlying processing model that data-binding and Tree Model both build upon, but it is also exposed to users who want ultimate performance and/or control over parsing or generation details.
 
@@ -582,7 +597,7 @@ Note: to use the `@JsonAlias` annotation, a `@JsonProperty` annotation must also
 
 
 Overall, Jackson library is very powerful in deserializing objects using builder pattern.
- 
+
 # Contribute!
 
 We would love to get your contribution, whether it's in form of bug reports, Requests for Enhancement (RFE), documentation, or code patches.
