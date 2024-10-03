@@ -253,27 +253,37 @@ mapper.writeValueAsString(root);
 
 ## 5 minute tutorial: Streaming parser, generator
 
-* TODO:
-As convenient as data-binding (to/from POJOs) can be; and as flexible as Tree model can be, there is one more canonical processing model available: incremental (aka "streaming") model.
-It is the underlying processing model that data-binding and Tree Model both build upon, but it is also exposed to users who want ultimate performance and/or control over parsing or generation details.
-
-For in-depth explanation, look at [Jackson Core component](https://github.com/FasterXML/jackson-core).
-But let's look at a simple teaser to whet your appetite.
+* incremental / "streaming" model
+  * another canonical processing model
+  * allows
+    * controlling over parsing
+  * uses
+    * by
+      * data-binding
+      * Tree Model
+* `JsonParser`
+  * allows
+    * reading file back
 
 ```java
 ObjectMapper mapper = ...;
-// First: write simple JSON output
-File jsonFile = new File("test.json");
-// note: method added in Jackson 2.11 (earlier would need to use
+
+File jsonFile = new File("test.json");      // JSON output 
+
+// 1. JsonGenerator
+// Jackson v2.11+ 
+JsonGenerator g = mapper.createGenerator(jsonFile, JsonEncoding.UTF8);
+// Jackson v2.11-
 // mapper.getFactory().createGenerator(...)
-JsonGenerator g = f.createGenerator(jsonFile, JsonEncoding.UTF8);
+
+// 2. populate JsonGenerator
 // write JSON: { "message" : "Hello world!" }
 g.writeStartObject();
 g.writeStringField("message", "Hello world!");
 g.writeEndObject();
 g.close();
 
-// Second: read file back
+// 3. JsonParser
 try (JsonParser p = mapper.createParser(jsonFile)) {
   JsonToken t = p.nextToken(); // Should be JsonToken.START_OBJECT
   t = p.nextToken(); // JsonToken.FIELD_NAME
@@ -291,6 +301,7 @@ try (JsonParser p = mapper.createParser(jsonFile)) {
 
 ## 10 minute tutorial: configuration
 
+* TODO:
 There are two entry-level configuration mechanisms you are likely to use:
 [Features](https://github.com/FasterXML/jackson-databind/wiki/JacksonFeatures) and [Annotations](https://github.com/FasterXML/jackson-annotations).
 
